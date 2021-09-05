@@ -1,37 +1,56 @@
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, FlatList, SafeAreaView } from 'react-native';
-import { Button, Checkbox, Searchbar } from 'react-native-paper';
-import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { Button } from 'react-native-paper';
+import { MaterialIcons } from '@expo/vector-icons';
+
+import Constants from 'expo-constants';
 
 import Movie from '../components/Movie';
 import apiMovies from '../data/movies';
 import Logo from '../components/Logo';
 import CONFIG from '../config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Home({ navigation }) {
 
-	const [showSearchInput, setShowSearchInput] = useState(false);
-	const [searchText, setSearchText] = useState('');
 	const [activeCategory, setActiveCategory] = useState('2');
 	const [movies, setMovies] = useState([]);
-	const [netWorkMovies, setNetWorkMovies] = useState([]);
-	const [limit, setLimit] = useState(10);
+	const [limit, setLimit] = useState(20);
+	const [favorites, setFavorites] = useState([]);
 
-	const getMovies = () => {
+	const getMovies = async () => {
 		let movies = [];
-		for (let i = 0; i < limit % apiMovies.length; i++) {
-			movies.push(apiMovies[i]);
+		const storedMovies = await AsyncStorage.getItem('movies');
+		let masterMovies = storedMovies == null ? apiMovies : storedMovies;
+
+		for (let i = 0; i < limit % masterMovies.length; i++) {
+			movies.push(masterMovies[i]);
 		}
 		setMovies(movies);
-		setLimit(limit + 10);
+		setLimit(limit + 20);
+	}
+
+	const getFavorites = async () => {
+		// const favs = (await AsyncStorage.getItem('favoriteMovies')).split('/');
+		const favs = [];
+		setFavorites(favs);
+	}
+
+	const isFavorite = async (id) => {
+		return favorites.includes(id);
+	}
+
+	const loadMore = () => {
+		getMovies();
 	}
 
 	useEffect(() => {
+		getFavorites();
 		getMovies();
 	}, []);
 
 	return (
-		<View style={{ flex: 1, backgroundColor: '#fff' }}>
+		<View style={{ flex: 1, backgroundColor: '#fff', paddingTop: Constants.statusBarHeight }}>
 			<View
 				style={{
 					backgroundColor: '#fff',
@@ -83,14 +102,25 @@ export default function Home({ navigation }) {
 				<View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}>
 					{
 						movies.map(movie => {
-							return <Movie key={movie.id} id={movie.id} title={movie.title} img={movie.img} videoUrl={movie.url} description={movie.description} nav={navigation} />
+							return (
+								<Movie
+									key={movie.id}
+									id={movie.id}
+									title={movie.title}
+									img={movie.img}
+									videoUrl={movie.url}
+									description={movie.description}
+									nav={navigation}
+									isFav={true}
+								/>
+							)
 						})
 					}
 				</View>
 
 				<Button mode='contained' style={{ backgroundColor: '#ff1155', margin: 10, padding: 10 }}
 					onPress={() => {
-						getMovies();
+						loadMore();
 					}}
 					labelStyle={{ color: '#fff' }}
 					icon='plus'

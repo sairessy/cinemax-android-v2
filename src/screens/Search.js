@@ -1,24 +1,37 @@
 import React, { useEffect, useState } from 'react';
-import { View, TextInput, Text, ScrollView, Image, TouchableOpacity, FlatList, SafeAreaView } from 'react-native';
-import { Button, Checkbox, Searchbar } from 'react-native-paper';
-import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { Searchbar } from 'react-native-paper';
+import { MaterialIcons } from '@expo/vector-icons';
 
-import Movie from '../components/Movie';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import Constants from 'expo-constants';
+
 import apiMovies from '../data/movies';
-import Logo from '../components/Logo';
 
 export default function Search({ navigation }) {
 
   const [searchText, setSearchText] = useState('');
   const [movies, setMovies] = useState([]);
-  const [limit, setLimit] = useState(10);
+  const [favorites, setFavorites] = useState([]);
+
+  const getFavorites = async () => {
+    // const favs = (await AsyncStorage.getItem('favoriteMovies')).split('/');
+    setFavorites([]);
+  }
+
+  const isFavorite = async (id) => {
+    return favorites.includes(id);
+  }
 
   const searchMovie = async (text) => {
     let sMovies = [];
     setSearchText(text);
+    const storedMovies = await AsyncStorage.getItem('movies');
+    let masterMovies = storedMovies == null ? apiMovies : storedMovies;
 
     if (searchText != '') {
-      apiMovies.forEach(movie => {
+      masterMovies.forEach(movie => {
         if (movie.title.toLowerCase().includes(searchText.toLowerCase())) {
           sMovies.push(movie);
         }
@@ -30,10 +43,11 @@ export default function Search({ navigation }) {
   }
 
   useEffect(() => {
+    getFavorites();
   }, []);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+    <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: Constants.statusBarHeight }}>
       <View
         style={{
           backgroundColor: '#fff',
@@ -56,11 +70,19 @@ export default function Search({ navigation }) {
           {
             movies.length > 0 ?
               movies.map(movie => {
-                // return <Movie key={movie.id} id={movie.id} title={movie.title} img={movie.img} videoUrl={movie.url} description={movie.description} nav={navigation} />
-                return <TouchableOpacity style={{ padding: 10 }} key={movie.id}
-                  onPress={() => { navigation.navigate('Player', { id: movie.id, videoUrl: movie.videoUrl, title: movie.title, description: movie.description }) }}
+                return <TouchableOpacity style={{ padding: 10, flexDirection: 'row', alignItems: 'center' }} key={movie.id}
+                  onPress={() => {
+                    navigation.navigate('Player', {
+                      id: movie.id,
+                      videoUrl: movie.url,
+                      title: movie.title,
+                      description: movie.description,
+                      isFav: true
+                    })
+                  }}
                 >
-                  <Text style={{ fontFamily: 'Title-Font' }}>{movie.title}</Text>
+                  <MaterialIcons name='search' color='#ddd' size={20} />
+                  <Text style={{ fontFamily: 'Title-Font', color: '#444', marginLeft: 5, fontSize: 12 }}>{movie.title}</Text>
                 </TouchableOpacity>
               }) : <View></View>
           }
